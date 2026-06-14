@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>מחשבון חלוקת כספים</title>
 
-    <!-- ספרייה חינמית ליצירת צילום מסך של הטבלה -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
@@ -75,7 +75,7 @@
       table {
         width: 100%;
         border-collapse: collapse;
-        min-width: 420px;
+        min-width: 340px;
       }
 
       th {
@@ -88,7 +88,7 @@
       }
 
       td {
-        padding: 8px;
+        padding: 10px;
         border: 1px solid #e5e7eb;
         text-align: center;
         font-size: 16px;
@@ -99,30 +99,13 @@
         font-weight: 500;
       }
 
+      td.percent-cell {
+        font-weight: 500;
+      }
+
       td.result-cell {
         background: #fff2cc;
         font-weight: bold;
-      }
-
-      input.row-name,
-      input.percent-input {
-        width: 100%;
-        border: none;
-        background: transparent;
-        text-align: center;
-        font-size: 16px;
-        padding: 6px;
-      }
-
-      input.row-name {
-        text-align: right;
-      }
-
-      input.row-name:focus,
-      input.percent-input:focus {
-        outline: 2px solid #93c5fd;
-        border-radius: 6px;
-        background: #eff6ff;
       }
 
       .total-row td {
@@ -159,18 +142,6 @@
         color: #111827;
       }
 
-      .add-btn {
-        background: #2563eb;
-        color: white;
-      }
-
-      .delete-btn {
-        background: #fee2e2;
-        color: #991b1b;
-        padding: 8px 10px;
-        font-size: 14px;
-      }
-
       .note {
         margin-top: 14px;
         color: #6b7280;
@@ -193,7 +164,7 @@
         }
 
         table {
-          min-width: 390px;
+          min-width: 320px;
         }
 
         td,
@@ -225,28 +196,23 @@
             <tr>
               <th>חלק יחסי</th>
               <th>%</th>
-              <th>הסכום הכולל</th>
-              <th>מחיקה</th>
+              <th>הסכום</th>
             </tr>
           </thead>
 
-          <tbody id="tableBody">
-            <!-- השורות נוצרות דרך JavaScript -->
-          </tbody>
+          <tbody id="tableBody"></tbody>
 
           <tfoot>
             <tr class="total-row">
               <td>סה״כ</td>
-              <td id="totalPercent">100%</td>
-              <td id="totalAmount" class="result-cell">₪0.00</td>
-              <td></td>
+              <td>100%</td>
+              <td id="totalAmount" class="result-cell">₪0</td>
             </tr>
           </tfoot>
         </table>
       </section>
 
       <div class="actions">
-        <button class="add-btn" onclick="addRow()">הוספת שורה</button>
         <button class="share-btn" onclick="shareResults()">
           שיתוף התוצאות בוואטסאפ
         </button>
@@ -256,37 +222,31 @@
       </div>
 
       <p class="note">
-        אפשר לערוך את השמות והאחוזים ישירות בתוך הטבלה. הנתונים נשמרים אוטומטית
-        במכשיר שבו משתמשים.
+        הסכומים מעוגלים למספר השלם הקרוב. דליה, מעין ותמר מחושבות לפי 1/12 כל
+        אחת, ומוצגות כ־8%.
       </p>
     </main>
 
     <script>
-      const defaultRows = [
-        { name: "אורי", percent: 25 },
-        { name: "מיקי", percent: 25 },
-        { name: "יובל", percent: 25 },
-        { name: "דליה", percent: 8 },
-        { name: "מירי", percent: 8 },
-        { name: "תמר", percent: 8 },
+      const rows = [
+        { name: "אורי", percentLabel: "25%", ratio: 0.25 },
+        { name: "מיקי", percentLabel: "25%", ratio: 0.25 },
+        { name: "יובל", percentLabel: "25%", ratio: 0.25 },
+        { name: "דליה", percentLabel: "8%", ratio: 1 / 12 },
+        { name: "מעין", percentLabel: "8%", ratio: 1 / 12 },
+        { name: "תמר", percentLabel: "8%", ratio: 1 / 12 },
       ];
-
-      let rows = loadRows();
-
-      function loadRows() {
-        const savedRows = localStorage.getItem("moneySplitRows");
-        return savedRows ? JSON.parse(savedRows) : defaultRows;
-      }
-
-      function saveRows() {
-        localStorage.setItem("moneySplitRows", JSON.stringify(rows));
-      }
 
       function formatMoney(amount) {
         return new Intl.NumberFormat("he-IL", {
           style: "currency",
           currency: "ILS",
+          maximumFractionDigits: 0,
         }).format(amount || 0);
+      }
+
+      function roundAmount(amount) {
+        return Math.round(amount);
       }
 
       function renderTable() {
@@ -297,29 +257,9 @@
           const tr = document.createElement("tr");
 
           tr.innerHTML = `
-          <td class="name-cell">
-            <input
-              class="row-name"
-              value="${row.name}"
-              oninput="updateName(${index}, this.value)"
-            />
-          </td>
-
-          <td>
-            <input
-              class="percent-input"
-              type="number"
-              inputmode="decimal"
-              value="${row.percent}"
-              oninput="updatePercent(${index}, this.value)"
-            />
-          </td>
-
-          <td id="result-${index}" class="result-cell">₪0.00</td>
-
-          <td>
-            <button class="delete-btn" onclick="deleteRow(${index})">X</button>
-          </td>
+          <td class="name-cell">${row.name}</td>
+          <td class="percent-cell">${row.percentLabel}</td>
+          <td id="result-${index}" class="result-cell">₪0</td>
         `;
 
           tableBody.appendChild(tr);
@@ -332,55 +272,22 @@
         const mainAmount =
           Number(document.getElementById("mainAmount").value) || 0;
 
-        let totalPercent = 0;
         let totalCalculatedAmount = 0;
 
         rows.forEach((row, index) => {
-          const percent = Number(row.percent) || 0;
-          const result = mainAmount * (percent / 100);
-
-          totalPercent += percent;
+          const result = roundAmount(mainAmount * row.ratio);
           totalCalculatedAmount += result;
 
           const resultCell = document.getElementById(`result-${index}`);
+
           if (resultCell) {
             resultCell.textContent = formatMoney(result);
           }
         });
 
-        document.getElementById("totalPercent").textContent =
-          totalPercent + "%";
         document.getElementById("totalAmount").textContent = formatMoney(
           totalCalculatedAmount,
         );
-
-        saveRows();
-      }
-
-      function updateName(index, value) {
-        rows[index].name = value;
-        saveRows();
-      }
-
-      function updatePercent(index, value) {
-        rows[index].percent = Number(value) || 0;
-        calculateAll();
-      }
-
-      function addRow() {
-        rows.push({
-          name: "שם חדש",
-          percent: 0,
-        });
-
-        saveRows();
-        renderTable();
-      }
-
-      function deleteRow(index) {
-        rows.splice(index, 1);
-        saveRows();
-        renderTable();
       }
 
       function resetCalculator() {
@@ -392,15 +299,19 @@
         const mainAmount =
           Number(document.getElementById("mainAmount").value) || 0;
 
-        let text = `חלוקת כספים\n`;
+        let text = "חלוקת כספים\n";
         text += `הסכום הכולל: ${formatMoney(mainAmount)}\n\n`;
 
+        let totalCalculatedAmount = 0;
+
         rows.forEach((row) => {
-          const amount = mainAmount * ((Number(row.percent) || 0) / 100);
-          text += `${row.name}: ${row.percent}% = ${formatMoney(amount)}\n`;
+          const amount = roundAmount(mainAmount * row.ratio);
+          totalCalculatedAmount += amount;
+
+          text += `${row.name}: ${row.percentLabel} = ${formatMoney(amount)}\n`;
         });
 
-        text += `\nסה״כ: ${formatMoney(mainAmount)}`;
+        text += `\nסה״כ לאחר עיגול: ${formatMoney(totalCalculatedAmount)}`;
 
         return text;
       }
