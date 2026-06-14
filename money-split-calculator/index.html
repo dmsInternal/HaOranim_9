@@ -6,8 +6,6 @@
 
     <title>מחשבון חלוקת כספים</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
     <style>
       * {
         box-sizing: border-box;
@@ -216,6 +214,7 @@
         <button class="share-btn" onclick="shareResults()">
           שיתוף התוצאות בוואטסאפ
         </button>
+
         <button class="reset-btn" onclick="resetCalculator()">
           איפוס סכום
         </button>
@@ -257,10 +256,10 @@
           const tr = document.createElement("tr");
 
           tr.innerHTML = `
-          <td class="name-cell">${row.name}</td>
-          <td class="percent-cell">${row.percentLabel}</td>
-          <td id="result-${index}" class="result-cell">₪0</td>
-        `;
+            <td class="name-cell">${row.name}</td>
+            <td class="percent-cell">${row.percentLabel}</td>
+            <td id="result-${index}" class="result-cell">₪0</td>
+          `;
 
           tableBody.appendChild(tr);
         });
@@ -317,39 +316,34 @@
       }
 
       async function shareResults() {
-        const captureArea = document.getElementById("captureArea");
         const shareText = buildShareText();
 
-        try {
-          const canvas = await html2canvas(captureArea, {
-            backgroundColor: "#ffffff",
-            scale: 2,
-          });
-
-          canvas.toBlob(async function (blob) {
-            const file = new File([blob], "money-split-results.png", {
-              type: "image/png",
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: "חלוקת כספים",
+              text: shareText,
             });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                title: "חלוקת כספים",
-                text: "מצורפת חלוקת הכספים",
-                files: [file],
-              });
-            } else {
-              shareTextToWhatsApp(shareText);
-            }
-          });
-        } catch (error) {
-          shareTextToWhatsApp(shareText);
+            return;
+          } catch (error) {
+            console.log("השיתוף הרגיל נכשל או בוטל:", error);
+          }
         }
+
+        shareTextToWhatsApp(shareText);
       }
 
       function shareTextToWhatsApp(text) {
         const encodedText = encodeURIComponent(text);
-        const whatsappUrl = `https://wa.me/?text=${encodedText}`;
-        window.open(whatsappUrl, "_blank");
+
+        const whatsappAppUrl = `whatsapp://send?text=${encodedText}`;
+        const whatsappWebUrl = `https://wa.me/?text=${encodedText}`;
+
+        window.location.href = whatsappAppUrl;
+
+        setTimeout(() => {
+          window.location.href = whatsappWebUrl;
+        }, 800);
       }
 
       renderTable();
