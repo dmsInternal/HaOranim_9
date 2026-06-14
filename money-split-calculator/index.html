@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>מחשבון חלוקת כספים</title>
+
+    <!-- ספרייה חינמית ליצירת צילום מסך של הטבלה -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f6f8;
+        color: #1f2937;
+        padding: 16px;
+      }
+
+      .app {
+        max-width: 520px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+        text-align: center;
+      }
+
+      .subtitle {
+        text-align: center;
+        color: #6b7280;
+        margin-bottom: 20px;
+        font-size: 14px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+
+      .amount-input {
+        width: 100%;
+        padding: 14px;
+        font-size: 22px;
+        border: 2px solid #d1d5db;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 18px;
+      }
+
+      .amount-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      .table-card {
+        overflow-x: auto;
+        border-radius: 14px;
+        border: 1px solid #d1d5db;
+        background: white;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 420px;
+      }
+
+      th {
+        background: #dbe4f3;
+        color: #111827;
+        font-weight: bold;
+        padding: 10px;
+        border: 1px solid #c7d2e5;
+        text-align: center;
+      }
+
+      td {
+        padding: 8px;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        font-size: 16px;
+      }
+
+      td.name-cell {
+        text-align: right;
+        font-weight: 500;
+      }
+
+      td.result-cell {
+        background: #fff2cc;
+        font-weight: bold;
+      }
+
+      input.row-name,
+      input.percent-input {
+        width: 100%;
+        border: none;
+        background: transparent;
+        text-align: center;
+        font-size: 16px;
+        padding: 6px;
+      }
+
+      input.row-name {
+        text-align: right;
+      }
+
+      input.row-name:focus,
+      input.percent-input:focus {
+        outline: 2px solid #93c5fd;
+        border-radius: 6px;
+        background: #eff6ff;
+      }
+
+      .total-row td {
+        font-weight: bold;
+        background: #f9fafb;
+      }
+
+      .total-row .result-cell {
+        background: #fde68a;
+      }
+
+      .actions {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      button {
+        border: none;
+        border-radius: 12px;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .share-btn {
+        background: #25d366;
+        color: white;
+      }
+
+      .reset-btn {
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      .add-btn {
+        background: #2563eb;
+        color: white;
+      }
+
+      .delete-btn {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 8px 10px;
+        font-size: 14px;
+      }
+
+      .note {
+        margin-top: 14px;
+        color: #6b7280;
+        font-size: 13px;
+        line-height: 1.5;
+        text-align: center;
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 10px;
+        }
+
+        .app {
+          padding: 16px;
+        }
+
+        h1 {
+          font-size: 21px;
+        }
+
+        table {
+          min-width: 390px;
+        }
+
+        td,
+        th {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="app">
+      <h1>מחשבון חלוקת כספים</h1>
+      <p class="subtitle">הכניסו סכום, והטבלה תחשב אוטומטית את החלוקה.</p>
+
+      <label for="mainAmount">הסכום הכללי</label>
+      <input
+        id="mainAmount"
+        class="amount-input"
+        type="number"
+        inputmode="decimal"
+        placeholder="לדוגמה: 1000"
+        oninput="calculateAll()"
+      />
+
+      <section id="captureArea" class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>חלק יחסי</th>
+              <th>%</th>
+              <th>הסכום הכולל</th>
+              <th>מחיקה</th>
+            </tr>
+          </thead>
+
+          <tbody id="tableBody">
+            <!-- השורות נוצרות דרך JavaScript -->
+          </tbody>
+
+          <tfoot>
+            <tr class="total-row">
+              <td>סה״כ</td>
+              <td id="totalPercent">100%</td>
+              <td id="totalAmount" class="result-cell">₪0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <div class="actions">
+        <button class="add-btn" onclick="addRow()">הוספת שורה</button>
+        <button class="share-btn" onclick="shareResults()">
+          שיתוף התוצאות בוואטסאפ
+        </button>
+        <button class="reset-btn" onclick="resetCalculator()">
+          איפוס סכום
+        </button>
+      </div>
+
+      <p class="note">
+        אפשר לערוך את השמות והאחוזים ישירות בתוך הטבלה. הנתונים נשמרים אוטומטית
+        במכשיר שבו משתמשים.
+      </p>
+    </main>
+
+    <script>
+      const defaultRows = [
+        { name: "אורי", percent: 25 },
+        { name: "מיקי", percent: 25 },
+        { name: "יובל", percent: 25 },
+        { name: "דליה", percent: 8 },
+        { name: "מירי", percent: 8 },
+        { name: "תמר", percent: 8 },
+      ];
+
+      let rows = loadRows();
+
+      function loadRows() {
+        const savedRows = localStorage.getItem("moneySplitRows");
+        return savedRows ? JSON.parse(savedRows) : defaultRows;
+      }
+
+      function saveRows() {
+        localStorage.setItem("moneySplitRows", JSON.stringify(rows));
+      }
+
+      function formatMoney(amount) {
+        return new Intl.NumberFormat("he-IL", {
+          style: "currency",
+          currency: "ILS",
+        }).format(amount || 0);
+      }
+
+      function renderTable() {
+        const tableBody = document.getElementById("tableBody");
+        tableBody.innerHTML = "";
+
+        rows.forEach((row, index) => {
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+          <td class="name-cell">
+            <input
+              class="row-name"
+              value="${row.name}"
+              oninput="updateName(${index}, this.value)"
+            />
+          </td>
+
+          <td>
+            <input
+              class="percent-input"
+              type="number"
+              inputmode="decimal"
+              value="${row.percent}"
+              oninput="updatePercent(${index}, this.value)"
+            />
+          </td>
+
+          <td id="result-${index}" class="result-cell">₪0.00</td>
+
+          <td>
+            <button class="delete-btn" onclick="deleteRow(${index})">X</button>
+          </td>
+        `;
+
+          tableBody.appendChild(tr);
+        });
+
+        calculateAll();
+      }
+
+      function calculateAll() {
+        const mainAmount =
+          Number(document.getElementById("mainAmount").value) || 0;
+
+        let totalPercent = 0;
+        let totalCalculatedAmount = 0;
+
+        rows.forEach((row, index) => {
+          const percent = Number(row.percent) || 0;
+          const result = mainAmount * (percent / 100);
+
+          totalPercent += percent;
+          totalCalculatedAmount += result;
+
+          const resultCell = document.getElementById(`result-${index}`);
+          if (resultCell) {
+            resultCell.textContent = formatMoney(result);
+          }
+        });
+
+        document.getElementById("totalPercent").textContent =
+          totalPercent + "%";
+        document.getElementById("totalAmount").textContent = formatMoney(
+          totalCalculatedAmount,
+        );
+
+        saveRows();
+      }
+
+      function updateName(index, value) {
+        rows[index].name = value;
+        saveRows();
+      }
+
+      function updatePercent(index, value) {
+        rows[index].percent = Number(value) || 0;
+        calculateAll();
+      }
+
+      function addRow() {
+        rows.push({
+          name: "שם חדש",
+          percent: 0,
+        });
+
+        saveRows();
+        renderTable();
+      }
+
+      function deleteRow(index) {
+        rows.splice(index, 1);
+        saveRows();
+        renderTable();
+      }
+
+      function resetCalculator() {
+        document.getElementById("mainAmount").value = "";
+        calculateAll();
+      }
+
+      function buildShareText() {
+        const mainAmount =
+          Number(document.getElementById("mainAmount").value) || 0;
+
+        let text = `חלוקת כספים\n`;
+        text += `הסכום הכולל: ${formatMoney(mainAmount)}\n\n`;
+
+        rows.forEach((row) => {
+          const amount = mainAmount * ((Number(row.percent) || 0) / 100);
+          text += `${row.name}: ${row.percent}% = ${formatMoney(amount)}\n`;
+        });
+
+        text += `\nסה״כ: ${formatMoney(mainAmount)}`;
+
+        return text;
+      }
+
+      async function shareResults() {
+        const captureArea = document.getElementById("captureArea");
+        const shareText = buildShareText();
+
+        try {
+          const canvas = await html2canvas(captureArea, {
+            backgroundColor: "#ffffff",
+            scale: 2,
+          });
+
+          canvas.toBlob(async function (blob) {
+            const file = new File([blob], "money-split-results.png", {
+              type: "image/png",
+            });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                title: "חלוקת כספים",
+                text: "מצורפת חלוקת הכספים",
+                files: [file],
+              });
+            } else {
+              shareTextToWhatsApp(shareText);
+            }
+          });
+        } catch (error) {
+          shareTextToWhatsApp(shareText);
+        }
+      }
+
+      function shareTextToWhatsApp(text) {
+        const encodedText = encodeURIComponent(text);
+        const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+        window.open(whatsappUrl, "_blank");
+      }
+
+      renderTable();
+    </script>
+  </body>
+</html>
